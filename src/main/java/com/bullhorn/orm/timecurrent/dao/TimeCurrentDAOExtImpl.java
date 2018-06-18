@@ -1,5 +1,6 @@
 package com.bullhorn.orm.timecurrent.dao;
 
+import java.util.HashMap;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -59,4 +60,5 @@ public class TimeCurrentDAOExtImpl implements TimeCurrentDAOExt {
 	public void insertError(TblIntegrationErrors error){
 		em.persist(error);
 	}
+
 }

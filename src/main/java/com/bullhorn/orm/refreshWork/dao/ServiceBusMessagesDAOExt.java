@@ -8,4 +8,6 @@ public interface ServiceBusMessagesDAOExt {
     void batchInsert(List<TblIntegrationServiceBusMessages> msgs);
 
     List<TblIntegrationServiceBusMessages> findAllDownloaded();
+
+    boolean updateAllDownloaded(List<TblIntegrationServiceBusMessages> tblIntegrationServiceBusMessages);
 }

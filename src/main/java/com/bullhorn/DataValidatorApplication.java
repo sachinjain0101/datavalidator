@@ -1,9 +1,8 @@
 package com.bullhorn;
 
-import com.bullhorn.json.model.AzureConfig;
 import com.bullhorn.orm.refreshWork.dao.ServiceBusMessagesDAO;
 import com.bullhorn.orm.timecurrent.dao.ErrorsDAO;
-import com.bullhorn.orm.timecurrent.dao.FrontOfficeSystemDAO;
+import com.bullhorn.orm.timecurrent.dao.ClientDAO;
 import com.bullhorn.services.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,14 +11,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import javax.annotation.PreDestroy;
 
@@ -35,11 +30,13 @@ public class DataValidatorApplication {
 
 	final ErrorsDAO errorsDAO;
 	final ServiceBusMessagesDAO serviceBusMessagesDAO;
+	final ClientDAO clientDAO;
 
 	@Autowired
-	public DataValidatorApplication(ErrorsDAO errorsDAO, ServiceBusMessagesDAO serviceBusMessagesDAO) {
+	public DataValidatorApplication(ErrorsDAO errorsDAO, ServiceBusMessagesDAO serviceBusMessagesDAO, ClientDAO clientDAO) {
 		this.errorsDAO = errorsDAO;
 		this.serviceBusMessagesDAO = serviceBusMessagesDAO;
+		this.clientDAO = clientDAO;
 	}
 
 	public static void main(String[] args) {
@@ -49,7 +46,7 @@ public class DataValidatorApplication {
 	@EventListener
 	public void init(ContextRefreshedEvent event) {
 		LOGGER.info("Starting Data Validator");
-		Validator dataSwapper = new Validator(serviceBusMessagesDAO);
+		Validator dataSwapper = new Validator(serviceBusMessagesDAO,clientDAO);
 		dataSwapper.run();
 	}
 
