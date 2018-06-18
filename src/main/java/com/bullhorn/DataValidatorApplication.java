@@ -1,6 +1,7 @@
 package com.bullhorn;
 
 import com.bullhorn.orm.refreshWork.dao.ServiceBusMessagesDAO;
+import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
 import com.bullhorn.orm.timecurrent.dao.ErrorsDAO;
 import com.bullhorn.orm.timecurrent.dao.ClientDAO;
 import com.bullhorn.services.Validator;
@@ -31,12 +32,14 @@ public class DataValidatorApplication {
 	final ErrorsDAO errorsDAO;
 	final ServiceBusMessagesDAO serviceBusMessagesDAO;
 	final ClientDAO clientDAO;
+	final ValidatedMessagesDAO validatedMessagesDAO;
 
 	@Autowired
-	public DataValidatorApplication(ErrorsDAO errorsDAO, ServiceBusMessagesDAO serviceBusMessagesDAO, ClientDAO clientDAO) {
+	public DataValidatorApplication(ErrorsDAO errorsDAO, ServiceBusMessagesDAO serviceBusMessagesDAO, ClientDAO clientDAO, ValidatedMessagesDAO validatedMessagesDAO) {
 		this.errorsDAO = errorsDAO;
 		this.serviceBusMessagesDAO = serviceBusMessagesDAO;
 		this.clientDAO = clientDAO;
+		this.validatedMessagesDAO = validatedMessagesDAO;
 	}
 
 	public static void main(String[] args) {
@@ -46,7 +49,7 @@ public class DataValidatorApplication {
 	@EventListener
 	public void init(ContextRefreshedEvent event) {
 		LOGGER.info("Starting Data Validator");
-		Validator dataSwapper = new Validator(serviceBusMessagesDAO,clientDAO);
+		Validator dataSwapper = new Validator(serviceBusMessagesDAO,clientDAO, validatedMessagesDAO);
 		dataSwapper.run();
 	}
 

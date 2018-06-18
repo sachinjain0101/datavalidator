@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -15,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 public class TimeCurrentDAOExtImpl implements TimeCurrentDAOExt {
@@ -25,7 +26,15 @@ public class TimeCurrentDAOExtImpl implements TimeCurrentDAOExt {
 	@Qualifier("timeCurrentEntityManager")
 	private EntityManager em;
 
-	@Override
+	@Autowired
+    @Qualifier("timeCurrentNamedJdbcTemplate")
+	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+
+    @Autowired
+    @Qualifier("timeCurrentJdbcTemplate")
+    private JdbcTemplate jdbcTemplate;
+
+    @Override
 	@Transactional("timeCurrentTransactionManager")
 	public List<TblIntegrationFrontOfficeSystem> findByStatus(boolean status) {
 		LOGGER.info("Getting data for status - {}",status);
@@ -59,6 +68,21 @@ public class TimeCurrentDAOExtImpl implements TimeCurrentDAOExt {
 	@Transactional("timeCurrentTransactionManager")
 	public void insertError(TblIntegrationErrors error){
 		em.persist(error);
+	}
+
+	@Override
+	@Transactional("timeCurrentTransactionManager")
+	public HashMap<String,Client> getAllActiveClients(){
+	    Integer statusRecordID = 1;
+        String sql = "SELECT * FROM TimeCurrent.dbo.tblIntegration_Client WHERE StatusRecordID = ?";
+        List<Client> rows = jdbcTemplate.query(sql,new Object[]{statusRecordID},new ClientMapper());
+
+        HashMap<String,Client> clients = new HashMap<>();
+        rows.forEach((c) -> {
+            clients.put(c.getIntegrationKey(),c);
+        });
+
+        return clients;
 	}
 
 }

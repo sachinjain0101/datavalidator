@@ -1,12 +1,13 @@
 package com.bullhorn.services;
 
-import com.bullhorn.exceptions.InboundJSONException;
+import com.bullhorn.app.OperaStatus;
 import com.bullhorn.orm.refreshWork.dao.ServiceBusMessagesDAO;
+import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
 import com.bullhorn.orm.refreshWork.model.TblIntegrationServiceBusMessages;
+import com.bullhorn.orm.refreshWork.model.TblIntegrationValidatedMessages;
 import com.bullhorn.orm.timecurrent.dao.ClientDAO;
-import com.bullhorn.orm.timecurrent.model.TblIntegrationClient;
+import com.bullhorn.orm.timecurrent.model.Client;
 import com.bullhorn.orm.timecurrent.model.TblIntegrationErrors;
-import com.google.common.collect.Iterables;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -16,7 +17,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -28,81 +32,97 @@ public class Validator {
 
     private ServiceBusMessagesDAO serviceBusMessagesDAO;
     private ClientDAO clientDAO;
+    private ValidatedMessagesDAO validatedMessagesDAO;
 
     private List<TblIntegrationServiceBusMessages> downloadedMessages;
+    private HashMap<String, Client> clients;
 
     @Autowired
-    public Validator(ServiceBusMessagesDAO serviceBusMessagesDAO, ClientDAO clientDAO) {
+    public Validator(ServiceBusMessagesDAO serviceBusMessagesDAO, ClientDAO clientDAO, ValidatedMessagesDAO validatedMessagesDAO) {
         this.serviceBusMessagesDAO = serviceBusMessagesDAO;
         this.clientDAO = clientDAO;
+        this.validatedMessagesDAO = validatedMessagesDAO;
+    }
+
+    private void logMessages(List<TblIntegrationServiceBusMessages> msgs){
+        LOGGER.info("*****************");
+        msgs.forEach((m) -> {
+                    LOGGER.info("--- --- {} - {} - {}", m.getRecordID(), m.getProcessed(), m.getErrorDescription());
+                }
+        );
     }
 
     @Scheduled(fixedDelay = 5000, initialDelay = 3000)
     public void run() {
         LOGGER.info("Running the Data Validator");
+        clients = clientDAO.getAllActiveClients();
         downloadedMessages = serviceBusMessagesDAO.findAllDownloaded();
-        List<TblIntegrationServiceBusMessages> validIntegrationKeyMessgages = getMessagesWithValidIntegrationKey();
-        downloadedMessages.forEach((m)->{
-                 LOGGER.info("{}-{}-{}",m.getRecordID(),m.getProcessed(),m.getErrorDescription());
-                }
-        );
+        doMessageValidation();
+        logMessages(downloadedMessages);
 
-        validIntegrationKeyMessgages.forEach((m)->{
-                    LOGGER.info("{}-{}-{}",m.getRecordID(),m.getProcessed(),m.getErrorDescription());
-                }
-        );
+        List<TblIntegrationValidatedMessages> validMessages = getValidMessages();
 
-//        List<TblIntegrationServiceBusMessages> validMessages = getValidJSONMessages();
-//
-//
-//
-//        serviceBusMessagesDAO.updateAllDownloaded(downloadedMessages);
+        validatedMessagesDAO.batchInsertValidatedMessages(validMessages);
+        serviceBusMessagesDAO.updateAllDownloaded(downloadedMessages);
 
-        //LOGGER.info("Valid Message Count - {}",validMessages.size());
+        LOGGER.info("********* DONE",validMessages.size());
     }
 
-    public List<TblIntegrationServiceBusMessages> getValidJSONMessages() {
-        List<TblIntegrationServiceBusMessages> validMessages = new ArrayList<>();
-            JsonParser parser = new JsonParser();
-            for(TblIntegrationServiceBusMessages msg : downloadedMessages){
-                try {
-                    JsonArray array = parser.parse(msg.getMessage()).getAsJsonArray();
-                    msg.setProcessed(1);
-                    validMessages.add(msg);
-                }catch (Exception e){
-                    msg.setProcessed(0);
-                    msg.setErrorDescription("Invalid JSON");
-                    continue;
-                }
-            }
+    private List<TblIntegrationValidatedMessages> getValidMessages() {
+        List<TblIntegrationServiceBusMessages> messages =  downloadedMessages.stream()
+                .filter(msg -> msg.getProcessed() == 1)
+                .collect(Collectors.toList());
+
+        List<TblIntegrationValidatedMessages> validMessages = new ArrayList<>();
+        for(TblIntegrationServiceBusMessages msg:messages){
+
+            Client client = clients.get(msg.getIntegrationKey());
+
+            TblIntegrationValidatedMessages vm = new TblIntegrationValidatedMessages();
+            vm.setClient(client.getClient());
+            vm.setIntegrationKey(msg.getIntegrationKey());
+            vm.setMap(client.getMapName());
+            vm.setIsMapped(client.getMapped());
+            vm.setMessageId(msg.getMessageID());
+            vm.setSequenceNumber(msg.getSequenceNumber());
+            vm.setMessage(msg.getMessage());
+            vm.setServiceBusMessagesRecordID(msg.getRecordID());
+            vm.setFrontOfficeSystemRecordID(msg.getFrontOfficeSystemRecordID());
+            vm.setClientRecordID(client.getRecordId());
+
+            validMessages.add(vm);
+        }
+
         return validMessages;
+
     }
 
-    private List<TblIntegrationServiceBusMessages> getMessagesWithValidIntegrationKey() {
-        List<TblIntegrationServiceBusMessages> validIntegrationKeyMessages = new ArrayList<>();
+    public boolean isJSONValid(String jsonStr) {
+        try {
+            JsonParser parser = new JsonParser();
+            JsonArray array = parser.parse(jsonStr).getAsJsonArray();
+            return true;
+        }catch (Exception e){
+            return false;
+        }
+    }
 
-        HashMap<String,TblIntegrationClient> clientsMap = getAllClientsMap();
-
-        validIntegrationKeyMessages = downloadedMessages.stream()
+    private void doMessageValidation() {
+        downloadedMessages = downloadedMessages.stream()
                 .peek(msg -> {
-                    if(!clientsMap.containsKey(msg.getIntegrationKey())){
-                        msg.setProcessed(0);
+                    if (!isJSONValid(msg.getMessage())) {
+                        msg.setProcessed(OperaStatus.INVALID_JSON_ERROR.getValue());
+                        msg.setErrorDescription("Invalid JSON");
+                    } else if (!clients.containsKey(msg.getIntegrationKey())) {
+                        msg.setProcessed(OperaStatus.INTEGRATION_KEY_ERROR.getValue());
                         msg.setErrorDescription("Invalid IntegrationKey");
                     }
                 })
-                .filter(msg -> getAllClientsMap().containsKey(msg.getIntegrationKey()))
-                .collect(Collectors.toList());
-
-        return validIntegrationKeyMessages;
-    }
-
-    private HashMap<String,TblIntegrationClient> getAllClientsMap(){
-        List<TblIntegrationClient> clients = clientDAO.findAll();
-        HashMap<String,TblIntegrationClient> clientMap = new HashMap<>();
-        clients.forEach((c)->{
-            clientMap.put(c.getIntegrationKey(),c);
-        });
-        return clientMap;
+                .peek(msg -> {
+                            if (msg.getProcessed() == null)
+                                msg.setProcessed(OperaStatus.VALIDATED.getValue());
+                        }
+                ).collect(Collectors.toList());
     }
 
     private boolean updateStatus(List<TblIntegrationServiceBusMessages> tblIntegrationServiceBusMessages) {

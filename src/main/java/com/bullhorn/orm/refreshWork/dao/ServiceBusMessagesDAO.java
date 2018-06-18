@@ -8,5 +8,5 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Repository
-public interface ServiceBusMessagesDAO extends CrudRepository<TblIntegrationServiceBusMessages,Long>,ServiceBusMessagesDAOExt {
+public interface ServiceBusMessagesDAO extends CrudRepository<TblIntegrationServiceBusMessages,Long>,RefreshWorkDAOExt {
 }

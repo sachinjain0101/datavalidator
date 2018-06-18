@@ -1,15 +1,14 @@
 package com.bullhorn.orm.refreshWork.dao;
 
 import com.bullhorn.orm.refreshWork.model.TblIntegrationServiceBusMessages;
+import com.bullhorn.orm.refreshWork.model.TblIntegrationValidatedMessages;
 import com.bullhorn.orm.timecurrent.dao.TimeCurrentDAOExt;
-import com.bullhorn.orm.timecurrent.model.TblIntegrationFrontOfficeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -20,7 +19,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 
-public class ServiceBusMessagesDAOExtImpl implements ServiceBusMessagesDAOExt {
+public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TimeCurrentDAOExt.class);
 
@@ -33,19 +32,25 @@ public class ServiceBusMessagesDAOExtImpl implements ServiceBusMessagesDAOExt {
     EntityManager em;
 
     @Override
-    public void batchInsert(List<TblIntegrationServiceBusMessages> msgs) {
-        String sql = "INSERT INTO tblIntegration_ServiceBusMessages " +
-                            "(FrontOfficeSystemRecordID, Message, RecordID, SequenceNumber, MessageID) " +
-                            "values (?, ?, ?, ?, ?)";
+    public void batchInsertValidatedMessages(List<TblIntegrationValidatedMessages> msgs) {
+        String sql = "INSERT INTO tblIntegration_ValidatedMessages " +
+                "(Client, IntegrationKey, Map, IsMapped, MessageId, SequenceNumber, Message, " +
+                " FrontOfficeSystemRecordID, ClientRecordID, ServiceBusMessagesRecordID) " +
+                "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         int[] updateCounts = jdbcTemplate.batchUpdate(
                 sql,
                 new BatchPreparedStatementSetter() {
                     public void setValues(PreparedStatement ps, int i) throws SQLException {
-                        ps.setInt(1, msgs.get(i).getFrontOfficeSystemRecordID());
-                        ps.setString(2, msgs.get(i).getMessage());
-                        ps.setLong(3, msgs.get(i).getSequenceNumber());
-                        ps.setLong(4, msgs.get(i).getRecordID());
-                        ps.setString(5, msgs.get(i).getMessageID());
+                        ps.setString(1, msgs.get(i).getClient());
+                        ps.setString(2, msgs.get(i).getIntegrationKey());
+                        ps.setString(3, msgs.get(i).getMap());
+                        ps.setBoolean(4, msgs.get(i).getIsMapped());
+                        ps.setString(5, msgs.get(i).getMessageId());
+                        ps.setLong(6, msgs.get(i).getSequenceNumber());
+                        ps.setString(7, msgs.get(i).getMessage());
+                        ps.setInt(8, msgs.get(i).getFrontOfficeSystemRecordID());
+                        ps.setInt(9, msgs.get(i).getClientRecordID());
+                        ps.setLong(10, msgs.get(i).getServiceBusMessagesRecordID());
                     }
 
                     public int getBatchSize() {
@@ -74,8 +79,8 @@ public class ServiceBusMessagesDAOExtImpl implements ServiceBusMessagesDAOExt {
 
         LOGGER.info("Updating downloaded messages");
         String sql = "UPDATE tblIntegration_ServiceBusMessages " +
-                     "SET Processed = ? , ErrorDescription = ? " +
-                     "WHERE RecordID = ?";
+                "SET Processed = ? , ErrorDescription = ? " +
+                "WHERE RecordID = ?";
         int[] updateCounts = jdbcTemplate.batchUpdate(
                 sql,
                 new BatchPreparedStatementSetter() {
@@ -92,7 +97,5 @@ public class ServiceBusMessagesDAOExtImpl implements ServiceBusMessagesDAOExt {
 
         return false;
     }
-
-
 
 }
