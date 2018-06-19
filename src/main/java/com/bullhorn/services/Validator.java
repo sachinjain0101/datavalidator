@@ -81,7 +81,7 @@ public class Validator {
             TblIntegrationValidatedMessages vm = new TblIntegrationValidatedMessages();
             vm.setClient(client.getClient());
             vm.setIntegrationKey(msg.getIntegrationKey());
-            vm.setMap(client.getMapName());
+            vm.setMapName(client.getMapName());
             vm.setIsMapped(client.getMapped());
             vm.setMessageId(msg.getMessageID());
             vm.setSequenceNumber(msg.getSequenceNumber());
