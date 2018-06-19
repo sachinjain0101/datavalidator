@@ -66,7 +66,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
         CriteriaQuery<TblIntegrationServiceBusMessages> cq = cb.createQuery(TblIntegrationServiceBusMessages.class);
         Root<TblIntegrationServiceBusMessages> root = cq.from(TblIntegrationServiceBusMessages.class);
         cq.where(cb.isNull(root.get("processed")));
-        cq.orderBy(cb.asc(root.get("recordID")));
+        cq.orderBy(cb.asc(root.get("recordId")));
 
         TypedQuery<TblIntegrationServiceBusMessages> query = em.createQuery(cq);
 

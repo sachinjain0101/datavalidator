@@ -49,8 +49,8 @@ public class DataValidatorApplication {
 	@EventListener
 	public void init(ContextRefreshedEvent event) {
 		LOGGER.info("Starting Data Validator");
-		Validator dataSwapper = new Validator(serviceBusMessagesDAO,clientDAO, validatedMessagesDAO);
-		dataSwapper.run();
+		Validator validator = new Validator(serviceBusMessagesDAO,clientDAO, validatedMessagesDAO);
+		validator.run();
 	}
 
 	@PreDestroy
