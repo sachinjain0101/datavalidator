@@ -61,7 +61,7 @@ public class Validator {
 
     private List<TblIntegrationValidatedMessages> getValidMessages() {
         List<TblIntegrationServiceBusMessages> messages =  downloadedMessages.stream()
-                .filter(msg -> msg.getStatus() == OperaStatus.VALIDATED.toString())
+                .filter(msg -> msg.getStatus() == OperaStatus.PROCESSED.toString())
                 .collect(Collectors.toList());
 
         List<TblIntegrationValidatedMessages> validMessages = new ArrayList<>();
@@ -111,7 +111,7 @@ public class Validator {
                 })
                 .peek(msg -> {
                             if (msg.getStatus() == null)
-                                msg.setStatus(OperaStatus.VALIDATED.toString());
+                                msg.setStatus(OperaStatus.PROCESSED.toString());
                         }
                 ).collect(Collectors.toList());
     }
