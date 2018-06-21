@@ -79,13 +79,13 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
 
         LOGGER.debug("Updating downloaded messages");
         String sql = "UPDATE tblIntegration_ServiceBusMessages " +
-                "SET Processed = ? , ErrorDescription = ? " +
+                "SET Status = ? , ErrorDescription = ? " +
                 "WHERE RecordID = ?";
         int[] updateCounts = jdbcTemplate.batchUpdate(
                 sql,
                 new BatchPreparedStatementSetter() {
                     public void setValues(PreparedStatement ps, int i) throws SQLException {
-                        ps.setString(1, msgs.get(i).getProcessed());
+                        ps.setString(1, msgs.get(i).getStatus());
                         ps.setString(2, msgs.get(i).getErrorDescription());
                         ps.setLong(3, msgs.get(i).getRecordID());
                     }

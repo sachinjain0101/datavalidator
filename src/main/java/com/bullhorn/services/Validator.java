@@ -61,7 +61,7 @@ public class Validator {
 
     private List<TblIntegrationValidatedMessages> getValidMessages() {
         List<TblIntegrationServiceBusMessages> messages =  downloadedMessages.stream()
-                .filter(msg -> msg.getProcessed() == OperaStatus.VALIDATED.toString())
+                .filter(msg -> msg.getStatus() == OperaStatus.VALIDATED.toString())
                 .collect(Collectors.toList());
 
         List<TblIntegrationValidatedMessages> validMessages = new ArrayList<>();
@@ -102,16 +102,16 @@ public class Validator {
         downloadedMessages = downloadedMessages.stream()
                 .peek(msg -> {
                     if (!isJSONValid(msg.getMessage())) {
-                        msg.setProcessed(OperaStatus.INVALID_JSON_ERROR.toString());
+                        msg.setStatus(OperaStatus.INVALID_JSON_ERROR.toString());
                         msg.setErrorDescription("Invalid JSON");
                     } else if (!clients.containsKey(msg.getIntegrationKey())) {
-                        msg.setProcessed(OperaStatus.INTEGRATION_KEY_ERROR.toString());
+                        msg.setStatus(OperaStatus.INTEGRATION_KEY_ERROR.toString());
                         msg.setErrorDescription("Invalid IntegrationKey");
                     }
                 })
                 .peek(msg -> {
-                            if (msg.getProcessed() == null)
-                                msg.setProcessed(OperaStatus.VALIDATED.toString());
+                            if (msg.getStatus() == null)
+                                msg.setStatus(OperaStatus.VALIDATED.toString());
                         }
                 ).collect(Collectors.toList());
     }
