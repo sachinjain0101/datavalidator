@@ -31,7 +31,7 @@ public class DataValidator {
 	@RequestMapping(value = "/statusDesctiption", method = RequestMethod.GET)
 	public ResponseEntity<String> statusDesctiption() {
 		Gson gson = new Gson();
-		return new ResponseEntity(OperaStatus.getMap(),HttpStatus.OK);
+		return new ResponseEntity(OperaStatus.getLst(),HttpStatus.OK);
 	}
 }
 

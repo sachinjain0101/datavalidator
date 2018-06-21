@@ -37,7 +37,7 @@ public class TimeCurrentDAOExtImpl implements TimeCurrentDAOExt {
     @Override
 	@Transactional("timeCurrentTransactionManager")
 	public List<TblIntegrationFrontOfficeSystem> findByStatus(boolean status) {
-		LOGGER.info("Getting data for status - {}",status);
+		LOGGER.debug("Getting data for status - {}",status);
 		CriteriaBuilder cb = em.getCriteriaBuilder();
 		CriteriaQuery<TblIntegrationFrontOfficeSystem> cq = cb.createQuery(TblIntegrationFrontOfficeSystem.class);
 		Root<TblIntegrationFrontOfficeSystem> root = cq.from(TblIntegrationFrontOfficeSystem.class);
@@ -52,7 +52,7 @@ public class TimeCurrentDAOExtImpl implements TimeCurrentDAOExt {
     @Override
 	@Transactional("timeCurrentTransactionManager")
     public List<TblIntegrationClient> findByIntegrationKey(String integrationKey) {
-        LOGGER.info("Getting data for integrationKey - {}",integrationKey);
+        LOGGER.debug("Getting data for integrationKey - {}",integrationKey);
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<TblIntegrationClient> cq = cb.createQuery(TblIntegrationClient.class);
         Root<TblIntegrationClient> root = cq.from(TblIntegrationClient.class);

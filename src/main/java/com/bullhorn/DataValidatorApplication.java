@@ -48,14 +48,14 @@ public class DataValidatorApplication {
 
 	@EventListener
 	public void init(ContextRefreshedEvent event) {
-		LOGGER.info("Starting Data Validator");
+		LOGGER.debug("Starting Data Validator");
 		Validator validator = new Validator(serviceBusMessagesDAO,clientDAO, validatedMessagesDAO);
 		validator.run();
 	}
 
 	@PreDestroy
 	public void destroy() {
-		LOGGER.info("Shutting down Data Validator");
+		LOGGER.debug("Shutting down Data Validator");
 
 	}
 

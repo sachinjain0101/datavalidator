@@ -44,33 +44,24 @@ public class Validator {
         this.validatedMessagesDAO = validatedMessagesDAO;
     }
 
-    private void logMessages(List<TblIntegrationServiceBusMessages> msgs){
-        LOGGER.info("*****************");
-        msgs.forEach((m) -> {
-                    LOGGER.info("--- --- {} - {} - {}", m.getRecordID(), m.getProcessed(), m.getErrorDescription());
-                }
-        );
-    }
-
     @Scheduled(fixedDelay = 5000, initialDelay = 3000)
     public void run() {
-        LOGGER.info("Running the Data Validator");
+        LOGGER.debug("Running the Data Validator");
         clients = clientDAO.getAllActiveClients();
         downloadedMessages = serviceBusMessagesDAO.findAllDownloaded();
         doMessageValidation();
-        logMessages(downloadedMessages);
 
         List<TblIntegrationValidatedMessages> validMessages = getValidMessages();
 
         validatedMessagesDAO.batchInsertValidatedMessages(validMessages);
         serviceBusMessagesDAO.updateAllDownloaded(downloadedMessages);
 
-        LOGGER.info("********* DONE",validMessages.size());
+        LOGGER.debug("********* DONE",validMessages.size());
     }
 
     private List<TblIntegrationValidatedMessages> getValidMessages() {
         List<TblIntegrationServiceBusMessages> messages =  downloadedMessages.stream()
-                .filter(msg -> msg.getProcessed() == 1)
+                .filter(msg -> msg.getProcessed() == OperaStatus.VALIDATED.toString())
                 .collect(Collectors.toList());
 
         List<TblIntegrationValidatedMessages> validMessages = new ArrayList<>();
@@ -111,16 +102,16 @@ public class Validator {
         downloadedMessages = downloadedMessages.stream()
                 .peek(msg -> {
                     if (!isJSONValid(msg.getMessage())) {
-                        msg.setProcessed(OperaStatus.INVALID_JSON_ERROR.getValue());
+                        msg.setProcessed(OperaStatus.INVALID_JSON_ERROR.toString());
                         msg.setErrorDescription("Invalid JSON");
                     } else if (!clients.containsKey(msg.getIntegrationKey())) {
-                        msg.setProcessed(OperaStatus.INTEGRATION_KEY_ERROR.getValue());
+                        msg.setProcessed(OperaStatus.INTEGRATION_KEY_ERROR.toString());
                         msg.setErrorDescription("Invalid IntegrationKey");
                     }
                 })
                 .peek(msg -> {
                             if (msg.getProcessed() == null)
-                                msg.setProcessed(OperaStatus.VALIDATED.getValue());
+                                msg.setProcessed(OperaStatus.VALIDATED.toString());
                         }
                 ).collect(Collectors.toList());
     }

@@ -61,7 +61,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
 
     @Override
     public List<TblIntegrationServiceBusMessages> findAllDownloaded() {
-        LOGGER.info("Getting downloaded messages");
+        LOGGER.debug("Getting downloaded messages");
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<TblIntegrationServiceBusMessages> cq = cb.createQuery(TblIntegrationServiceBusMessages.class);
         Root<TblIntegrationServiceBusMessages> root = cq.from(TblIntegrationServiceBusMessages.class);
@@ -77,7 +77,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
     @Override
     public boolean updateAllDownloaded(List<TblIntegrationServiceBusMessages> msgs) {
 
-        LOGGER.info("Updating downloaded messages");
+        LOGGER.debug("Updating downloaded messages");
         String sql = "UPDATE tblIntegration_ServiceBusMessages " +
                 "SET Processed = ? , ErrorDescription = ? " +
                 "WHERE RecordID = ?";
@@ -85,7 +85,7 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
                 sql,
                 new BatchPreparedStatementSetter() {
                     public void setValues(PreparedStatement ps, int i) throws SQLException {
-                        ps.setInt(1, msgs.get(i).getProcessed());
+                        ps.setString(1, msgs.get(i).getProcessed());
                         ps.setString(2, msgs.get(i).getErrorDescription());
                         ps.setLong(3, msgs.get(i).getRecordID());
                     }

@@ -20,7 +20,7 @@ import java.util.HashMap;
 
 @Primary
 @Configuration
-@PropertySource({"classpath:orm-multi-db.properties"})
+@PropertySource({"file:orm-multi-db.properties"})
 @EnableJpaRepositories(basePackages = "com.bullhorn.orm.timecurrent.dao", entityManagerFactoryRef = "timeCurrentEntityManager", transactionManagerRef = "timeCurrentTransactionManager")
 public class TimeCurrentDBConfig {
     @Autowired
@@ -36,6 +36,9 @@ public class TimeCurrentDBConfig {
         HashMap<String, Object> properties = new HashMap<>();
         properties.put("hibernate.hbm2ddl.auto", env.getProperty("hibernate.hbm2ddl.auto"));
         properties.put("hibernate.dialect", env.getProperty("hibernate.dialect"));
+        properties.put("hibernate.show_sql",env.getProperty("hibernate.show_sql"));
+        properties.put("hibernate.cache.use_second_level_cache",env.getProperty("hibernate.cache.use_second_level_cache"));
+        properties.put("hibernate.cache.use_query_cache",env.getProperty("hibernate.cache.use_query_cache"));
         em.setJpaPropertyMap(properties);
         return em;
     }
