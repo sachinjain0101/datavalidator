@@ -24,8 +24,6 @@ public class ValidatorAsyncService {
     private final ClientDAO clientDAO;
     private final ValidatedMessagesDAO validatedMessagesDAO;
 
-    private List<TblIntegrationServiceBusMessages> downloadedMessages;
-    private HashMap<String, Client> clients;
     private long interval;
 
     public void setInterval(long interval) {
