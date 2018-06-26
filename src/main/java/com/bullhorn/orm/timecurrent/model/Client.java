@@ -1,14 +1,12 @@
 package com.bullhorn.orm.timecurrent.model;
 
-import io.swagger.models.auth.In;
-
 public class Client {
-    Integer recordId;
-    String client;
-    String integrationKey;
-    String mapName;
-    Integer frontOfficeSystemRecordID;
-    Boolean isMapped;
+    private Integer recordId;
+    private String client;
+    private String integrationKey;
+    private String mapName;
+    private Integer frontOfficeSystemRecordID;
+    private Boolean isMapped;
 
     public Client(String client, String integrationKey, String mapName, Integer frontOfficeSystemRecordID, Boolean isMapped) {
         this.client = client;

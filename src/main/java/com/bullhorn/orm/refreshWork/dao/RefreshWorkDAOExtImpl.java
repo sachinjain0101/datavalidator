@@ -5,7 +5,6 @@ import com.bullhorn.orm.refreshWork.model.TblIntegrationValidatedMessages;
 import com.bullhorn.orm.timecurrent.dao.TimeCurrentDAOExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -23,13 +22,14 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TimeCurrentDAOExt.class);
 
-    @Autowired
-    @Qualifier("refreshWorkJdbcTemplate")
-    JdbcTemplate jdbcTemplate;
+    private final EntityManager em;
+    private final JdbcTemplate jdbcTemplate;
 
-    @Autowired
-    @Qualifier("refreshWorkEntityManager")
-    EntityManager em;
+    public RefreshWorkDAOExtImpl(@Qualifier("refreshWorkJdbcTemplate") JdbcTemplate jdbcTemplate
+                                ,@Qualifier("refreshWorkEntityManager") EntityManager em) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.em = em;
+    }
 
     @Override
     public void batchInsertValidatedMessages(List<TblIntegrationValidatedMessages> msgs) {
@@ -52,7 +52,6 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
                         ps.setInt(9, msgs.get(i).getClientRecordID());
                         ps.setLong(10, msgs.get(i).getServiceBusMessagesRecordID());
                     }
-
                     public int getBatchSize() {
                         return msgs.size();
                     }
@@ -67,16 +66,12 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
         Root<TblIntegrationServiceBusMessages> root = cq.from(TblIntegrationServiceBusMessages.class);
         cq.where(cb.isNull(root.get("status")));
         cq.orderBy(cb.asc(root.get("recordId")));
-
         TypedQuery<TblIntegrationServiceBusMessages> query = em.createQuery(cq);
-
         return query.getResultList();
-
     }
 
     @Override
     public boolean updateAllDownloaded(List<TblIntegrationServiceBusMessages> msgs) {
-
         LOGGER.debug("Updating downloaded messages");
         String sql = "UPDATE tblIntegration_ServiceBusMessages " +
                 "SET Status = ? , ErrorDescription = ? " +
@@ -89,13 +84,10 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
                         ps.setString(2, msgs.get(i).getErrorDescription());
                         ps.setLong(3, msgs.get(i).getRecordID());
                     }
-
                     public int getBatchSize() {
                         return msgs.size();
                     }
                 });
-
         return false;
     }
-
 }

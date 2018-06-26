@@ -1,4 +1,4 @@
-package com.bullhorn.config;
+package com.bullhorn.config.db;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -23,8 +23,13 @@ import java.util.HashMap;
 @PropertySource({"file:orm-multi-db.properties"})
 @EnableJpaRepositories(basePackages = "com.bullhorn.orm.timecurrent.dao", entityManagerFactoryRef = "timeCurrentEntityManager", transactionManagerRef = "timeCurrentTransactionManager")
 public class TimeCurrentDBConfig {
-    @Autowired
+
     private Environment env;
+
+    @Autowired
+    public void setEnv(Environment env) {
+        this.env = env;
+    }
 
     @Bean
     public LocalContainerEntityManagerFactoryBean timeCurrentEntityManager() {

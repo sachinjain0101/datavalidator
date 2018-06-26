@@ -1,4 +1,4 @@
-package com.bullhorn.config;
+package com.bullhorn.config.app;
 
 import java.lang.reflect.Type;
 
