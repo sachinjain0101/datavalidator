@@ -12,9 +12,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @RestController
-@Api(value = "Base resource for Opera-DataMapper")
-@RequestMapping("/")
+@Api(value = "Base resource for Opera-DataValidator")
+@RequestMapping("/dataValidator")
 public class DataValidator {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataValidator.class);
@@ -31,6 +36,19 @@ public class DataValidator {
 		Gson gson = new Gson();
 		return new ResponseEntity(OperaStatus.getLst(),HttpStatus.OK);
 	}
+
+    @ApiOperation(value="Gets the Data Validator thread information.")
+    @RequestMapping(value = "/threads", method = RequestMethod.GET)
+    public List<String> threads(){
+        Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
+        Thread[] threadArray = threadSet.toArray(new Thread[threadSet.size()]);
+        List<String> lst = new ArrayList<>();
+        for(Thread t:threadArray){
+            lst.add(t.getName()+" : "+t.getState().toString());
+        }
+        return lst.stream().filter((s)->s.startsWith("DATA-VALIDATOR")).collect(Collectors.toList());
+    }
+
 }
 
 /*

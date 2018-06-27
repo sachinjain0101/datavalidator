@@ -5,7 +5,7 @@ import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
 import com.bullhorn.orm.timecurrent.dao.ClientDAO;
 import com.bullhorn.orm.timecurrent.dao.ConfigDAO;
 import com.bullhorn.orm.timecurrent.model.TblIntegrationConfig;
-import com.bullhorn.services.ValidatorAsyncService;
+import com.bullhorn.services.ValidatorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,34 +66,61 @@ public class DataValidatorApplication {
 	public ThreadPoolTaskScheduler validatorTaskScheduler() {
 		LOGGER.debug("Starting Validator Task Scheduler");
 		ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
-		TblIntegrationConfig val = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATA_VALIDATOR_POOL_SIZE")).collect(Collectors.toList()).get(0);
-		int poolSize = Integer.parseInt(val.getCfgValue());
+		TblIntegrationConfig val1 = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATA_VALIDATOR_POOL_SIZE")).collect(Collectors.toList()).get(0);
+		int poolSize = Integer.parseInt(val1.getCfgValue());
 		threadPoolTaskScheduler.setPoolSize(poolSize);
+		threadPoolTaskScheduler.setWaitForTasksToCompleteOnShutdown(true);
+		TblIntegrationConfig val2 = getConfig().stream().filter((k) -> k.getCfgKey().equals("THREADPOOL_SCHEDULER_TERMINATION_TIME_INSECONDS")).collect(Collectors.toList()).get(0);
+		int terminationTime = Integer.parseInt(val2.getCfgValue());
+		threadPoolTaskScheduler.setAwaitTerminationSeconds(terminationTime);
 		threadPoolTaskScheduler.setThreadNamePrefix("DATA-VALIDATOR-");
 		return threadPoolTaskScheduler;
 	}
 
-	@Bean("validatorAsyncSvc")
+	@Bean("validatorHandler")
 	@DependsOn("validatorTaskScheduler")
-	public ValidatorAsyncService validatorAsyncSvcInit(){
+	public ValidatorHandler validatorHandler(){
 		LOGGER.debug("DataSwapperAsyncService Constructed");
-		TblIntegrationConfig val = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATA_VALIDATOR_EXECUTE_INTERVAL")).collect(Collectors.toList()).get(0);
-		long interval = Long.parseLong(val.getCfgValue());
-		ValidatorAsyncService validatorAsyncService = new ValidatorAsyncService(serviceBusMessagesDAO, clientDAO, validatedMessagesDAO);
-		validatorAsyncService.setInterval(interval);
-		return validatorAsyncService;
+		TblIntegrationConfig val1 = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATA_VALIDATOR_EXECUTE_INTERVAL")).collect(Collectors.toList()).get(0);
+		long interval = Long.parseLong(val1.getCfgValue());
+		TblIntegrationConfig val2 = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATA_VALIDATOR_POOL_SIZE")).collect(Collectors.toList()).get(0);
+		int poolSize = Integer.parseInt(val2.getCfgValue());
+		ValidatorHandler validatorHandler = new ValidatorHandler(serviceBusMessagesDAO, clientDAO, validatedMessagesDAO);
+		validatorHandler.setInterval(interval);
+		validatorHandler.setPoolSize(poolSize);
+		return validatorHandler;
 	}
 
 	@EventListener
 	public void init(ContextRefreshedEvent event) {
 		LOGGER.debug("Starting Data Validator");
-		validatorAsyncSvcInit().executeAsynchronously();
+		validatorHandler().executeAsynchronously();
+		addDataSwapperShutdownHook();
 	}
 
 	@PreDestroy
 	public void destroy() {
 		LOGGER.debug("Shutting down Data Validator");
-
 	}
+
+	public void addDataSwapperShutdownHook() {
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				LOGGER.info("Shutdown received");
+				validatorHandler().shutdown();
+			}
+		});
+
+		Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+			@Override
+			public void uncaughtException(Thread t, Throwable e) {
+				LOGGER.error("Uncaught Exception on " + t.getName() + " : " + e, e);
+				validatorHandler().shutdown();
+			}
+		});
+		LOGGER.info("Data Validator ShutdownHook Added");
+	}
+
 
 }

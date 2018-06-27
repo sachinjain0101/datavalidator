@@ -15,9 +15,10 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-public class Validator implements Runnable{
+public class Validator implements CancellableRunnable{
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Validator.class);
     private static final String NOT_APPLICABLE = "NA";
@@ -29,23 +30,37 @@ public class Validator implements Runnable{
 
     private List<TblIntegrationServiceBusMessages> downloadedMessages;
     private HashMap<String, Client> clients;
+    public final long interval;
 
-    public Validator(ServiceBusMessagesDAO serviceBusMessagesDAO, ClientDAO clientDAO, ValidatedMessagesDAO validatedMessagesDAO) {
+    private AtomicBoolean processing = new AtomicBoolean();
+
+    public Validator(ServiceBusMessagesDAO serviceBusMessagesDAO, ClientDAO clientDAO, ValidatedMessagesDAO validatedMessagesDAO, long interval) {
         this.serviceBusMessagesDAO = serviceBusMessagesDAO;
         this.clientDAO = clientDAO;
         this.validatedMessagesDAO = validatedMessagesDAO;
+        this.interval = interval;
     }
 
     @Override
     public void run() {
+        processing.set(true);
         LOGGER.debug("Running the Data Validator");
-        clients = clientDAO.getAllActiveClients();
-        downloadedMessages = serviceBusMessagesDAO.findAllDownloaded();
-        doMessageValidation();
-        List<TblIntegrationValidatedMessages> validMessages = getValidMessages();
-        validatedMessagesDAO.batchInsertValidatedMessages(validMessages);
-        serviceBusMessagesDAO.updateAllDownloaded(downloadedMessages);
-        LOGGER.debug("********* DONE",validMessages.size());
+        while (!Thread.interrupted() && processing.get()) {
+            clients = clientDAO.getAllActiveClients();
+            downloadedMessages = serviceBusMessagesDAO.findAllDownloaded();
+            doMessageValidation();
+            List<TblIntegrationValidatedMessages> validMessages = getValidMessages();
+            validatedMessagesDAO.batchInsertValidatedMessages(validMessages);
+            serviceBusMessagesDAO.updateAllDownloaded(downloadedMessages);
+            LOGGER.debug("********* DONE", validMessages.size());
+            try {
+                Thread.sleep(interval);
+            } catch (InterruptedException e) {
+                LOGGER.debug("Data Validator interrupted : {}", e.getMessage());
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private List<TblIntegrationValidatedMessages> getValidMessages() {
@@ -99,4 +114,9 @@ public class Validator implements Runnable{
                 ).collect(Collectors.toList());
     }
 
+    @Override
+    public void cancel() {
+        processing.set(false);
+        LOGGER.debug("Stopping the Data Swapper : {}", processing.get());
+    }
 }
