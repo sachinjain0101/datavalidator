@@ -106,11 +106,14 @@
 			<version>1.3.1</version>
 		</dependency>
 
-		<!--<dependency>-->
-			<!--<groupId>com.microsoft.sqlserver</groupId>-->
-			<!--<artifactId>mssql-jdbc</artifactId>-->
-			<!--<scope>runtime</scope>-->
-		<!--</dependency>-->
+		<dependency>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>sqljdbc4</artifactId>
+			<version>4.2</version>
+			<scope>system</scope>
+    		<systemPath>${basedir}/lib/sqljdbc4-4.2.jar</systemPath>
+		</dependency>
+		
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -119,6 +122,7 @@
 	</dependencies>
 
 	<build>
+		<finalName>datavalidator</finalName>
 		<plugins>
 			<plugin>
 				<artifactId>maven-resources-plugin</artifactId>
@@ -161,7 +165,8 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<executable>true</executable>
+	                    		<executable>true</executable>
+			    		<includeSystemScope>true</includeSystemScope>
 				</configuration>
 			</plugin>
 
