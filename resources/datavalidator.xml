@@ -55,7 +55,7 @@ Their modification will not take affect without the service re-installation.
   <serviceaccount>
     <domain>CIGNIFY</domain>
     <user>sachin.jain</user>
-    <password>ShalinaJ12!@</password>
+    <password></password>
     <allowservicelogon>true</allowservicelogon>
   </serviceaccount>
   
