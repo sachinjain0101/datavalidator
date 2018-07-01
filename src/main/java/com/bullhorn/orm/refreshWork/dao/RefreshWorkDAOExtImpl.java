@@ -3,6 +3,7 @@ package com.bullhorn.orm.refreshWork.dao;
 import com.bullhorn.orm.refreshWork.model.TblIntegrationServiceBusMessages;
 import com.bullhorn.orm.refreshWork.model.TblIntegrationValidatedMessages;
 import com.bullhorn.orm.timecurrent.dao.TimeCurrentDAOExt;
+import com.bullhorn.orm.timecurrent.model.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,7 +17,10 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
 
@@ -58,16 +62,24 @@ public class RefreshWorkDAOExtImpl implements RefreshWorkDAOExt {
                 });
     }
 
+
+
     @Override
-    public List<TblIntegrationServiceBusMessages> findAllDownloaded() {
+    public List<TblIntegrationServiceBusMessages> findAllDownloaded(HashMap<String, Client> clients) {
         LOGGER.debug("Getting downloaded messages");
-        CriteriaBuilder cb = em.getCriteriaBuilder();
-        CriteriaQuery<TblIntegrationServiceBusMessages> cq = cb.createQuery(TblIntegrationServiceBusMessages.class);
-        Root<TblIntegrationServiceBusMessages> root = cq.from(TblIntegrationServiceBusMessages.class);
-        cq.where(cb.isNull(root.get("status")));
-        cq.orderBy(cb.asc(root.get("recordId")));
-        TypedQuery<TblIntegrationServiceBusMessages> query = em.createQuery(cq);
-        return query.getResultList();
+
+        List<TblIntegrationServiceBusMessages> downloadedMessages = new ArrayList<>();
+        for(Map.Entry<String,Client> entry:clients.entrySet()){
+            CriteriaBuilder cb = em.getCriteriaBuilder();
+            CriteriaQuery<TblIntegrationServiceBusMessages> cq = cb.createQuery(TblIntegrationServiceBusMessages.class);
+            Root<TblIntegrationServiceBusMessages> root = cq.from(TblIntegrationServiceBusMessages.class);
+            cq.where(cb.isNull(root.get("status"))
+                    ,cb.equal(root.get("integrationKey"),entry.getKey()));
+            cq.orderBy(cb.asc(root.get("recordId")));
+            TypedQuery<TblIntegrationServiceBusMessages> query = em.createQuery(cq);
+            downloadedMessages.addAll(query.getResultList());
+        }
+        return downloadedMessages;
     }
 
     @Override

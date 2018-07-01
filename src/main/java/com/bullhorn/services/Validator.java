@@ -7,6 +7,7 @@ import com.bullhorn.orm.refreshWork.model.TblIntegrationServiceBusMessages;
 import com.bullhorn.orm.refreshWork.model.TblIntegrationValidatedMessages;
 import com.bullhorn.orm.timecurrent.dao.ClientDAO;
 import com.bullhorn.orm.timecurrent.model.Client;
+import com.bullhorn.orm.timecurrent.model.TblIntegrationFrontOfficeSystem;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import org.slf4j.Logger;
@@ -30,15 +31,23 @@ public class Validator implements CancellableRunnable{
 
     private List<TblIntegrationServiceBusMessages> downloadedMessages;
     private HashMap<String, Client> clients;
-    public final long interval;
+
+    private long interval;
+    public void setInterval(long interval) {
+        this.interval = interval;
+    }
 
     private AtomicBoolean processing = new AtomicBoolean();
 
-    public Validator(ServiceBusMessagesDAO serviceBusMessagesDAO, ClientDAO clientDAO, ValidatedMessagesDAO validatedMessagesDAO, long interval) {
+    private TblIntegrationFrontOfficeSystem FOS;
+    public void setFOS(TblIntegrationFrontOfficeSystem FOS) {
+        this.FOS = FOS;
+    }
+
+    public Validator(ServiceBusMessagesDAO serviceBusMessagesDAO, ClientDAO clientDAO, ValidatedMessagesDAO validatedMessagesDAO) {
         this.serviceBusMessagesDAO = serviceBusMessagesDAO;
         this.clientDAO = clientDAO;
         this.validatedMessagesDAO = validatedMessagesDAO;
-        this.interval = interval;
     }
 
     @Override
@@ -46,8 +55,8 @@ public class Validator implements CancellableRunnable{
         processing.set(true);
         LOGGER.debug("Running the Data Validator");
         while (!Thread.interrupted() && processing.get()) {
-            clients = clientDAO.getAllActiveClients();
-            downloadedMessages = serviceBusMessagesDAO.findAllDownloaded();
+            clients = clientDAO.getAllActiveClients(FOS.getRecordId());
+            downloadedMessages = serviceBusMessagesDAO.findAllDownloaded(clients);
             doMessageValidation();
             List<TblIntegrationValidatedMessages> validMessages = getValidMessages();
             validatedMessagesDAO.batchInsertValidatedMessages(validMessages);

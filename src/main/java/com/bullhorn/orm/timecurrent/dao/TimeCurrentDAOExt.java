@@ -10,10 +10,14 @@ import java.util.List;
 
 public interface TimeCurrentDAOExt {
 
-	List<TblIntegrationFrontOfficeSystem> findByStatus(boolean status);
+    List<TblIntegrationFrontOfficeSystem> findByStatus(boolean status, String cluster);
+	HashMap<String,Client> getAllActiveClients(int frontOfficeSystemRecordID);
+
+    List<TblIntegrationFrontOfficeSystem> findByStatus(boolean status);
 	List<TblIntegrationClient> findByIntegrationKey(String integrationKey);
 
 	void insertError(TblIntegrationErrors error);
 
-	HashMap<String,Client> getAllActiveClients();
+	//HashMap<String,Client> getAllActiveClients();
+
 }

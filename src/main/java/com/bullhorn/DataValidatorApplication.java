@@ -4,7 +4,9 @@ import com.bullhorn.orm.refreshWork.dao.ServiceBusMessagesDAO;
 import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
 import com.bullhorn.orm.timecurrent.dao.ClientDAO;
 import com.bullhorn.orm.timecurrent.dao.ConfigDAO;
+import com.bullhorn.orm.timecurrent.dao.FrontOfficeSystemDAO;
 import com.bullhorn.orm.timecurrent.model.TblIntegrationConfig;
+import com.bullhorn.orm.timecurrent.model.TblIntegrationFrontOfficeSystem;
 import com.bullhorn.services.ValidatorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,7 @@ public class DataValidatorApplication {
 		this.env = env;
 	}
 
+	private final FrontOfficeSystemDAO frontOfficeSystemDAO;
 	private final ServiceBusMessagesDAO serviceBusMessagesDAO;
 	private final ClientDAO clientDAO;
 	private final ValidatedMessagesDAO validatedMessagesDAO;
@@ -46,29 +49,35 @@ public class DataValidatorApplication {
 
 	@Autowired
 	public DataValidatorApplication(ServiceBusMessagesDAO serviceBusMessagesDAO, ClientDAO clientDAO
-			, ValidatedMessagesDAO validatedMessagesDAO, ConfigDAO configDAO) {
+			, ValidatedMessagesDAO validatedMessagesDAO, ConfigDAO configDAO, FrontOfficeSystemDAO frontOfficeSystemDAO) {
 		this.serviceBusMessagesDAO = serviceBusMessagesDAO;
 		this.clientDAO = clientDAO;
 		this.validatedMessagesDAO = validatedMessagesDAO;
 		this.configDAO = configDAO;
+		this.frontOfficeSystemDAO = frontOfficeSystemDAO;
 	}
 
 	public static void main(String[] args) {
 		SpringApplication.run(DataValidatorApplication.class, args);
 	}
 
+	private List<TblIntegrationFrontOfficeSystem> lstFOS = null;
+
 	@Bean(name = "integrationConfig")
 	public List<TblIntegrationConfig> getConfig(){
+		String cluster = (env.getProperty("azureConsumer.clusterName")!=null)?env.getProperty("azureConsumer.clusterName"):"";
+		LOGGER.debug("Cluster info : {} & isEmpty : {}",cluster,cluster.isEmpty());
+		// VIMP: lstFOS drives the AzureConsumer ThreadPool size
+		lstFOS = frontOfficeSystemDAO.findByStatus(true,cluster);
 		return configDAO.findAll();
 	}
 
 	@Bean("validatorTaskScheduler")
+	@DependsOn("integrationConfig")
 	public ThreadPoolTaskScheduler validatorTaskScheduler() {
 		LOGGER.debug("Starting Validator Task Scheduler");
 		ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
-		TblIntegrationConfig val1 = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATA_VALIDATOR_POOL_SIZE")).collect(Collectors.toList()).get(0);
-		int poolSize = Integer.parseInt(val1.getCfgValue());
-		threadPoolTaskScheduler.setPoolSize(poolSize);
+		threadPoolTaskScheduler.setPoolSize(lstFOS.size());
 		threadPoolTaskScheduler.setWaitForTasksToCompleteOnShutdown(true);
 		TblIntegrationConfig val2 = getConfig().stream().filter((k) -> k.getCfgKey().equals("THREADPOOL_SCHEDULER_TERMINATION_TIME_INSECONDS")).collect(Collectors.toList()).get(0);
 		int terminationTime = Integer.parseInt(val2.getCfgValue());
@@ -83,11 +92,10 @@ public class DataValidatorApplication {
 		LOGGER.debug("DataSwapperAsyncService Constructed");
 		TblIntegrationConfig val1 = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATA_VALIDATOR_EXECUTE_INTERVAL")).collect(Collectors.toList()).get(0);
 		long interval = Long.parseLong(val1.getCfgValue());
-		TblIntegrationConfig val2 = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATA_VALIDATOR_POOL_SIZE")).collect(Collectors.toList()).get(0);
-		int poolSize = Integer.parseInt(val2.getCfgValue());
 		ValidatorHandler validatorHandler = new ValidatorHandler(serviceBusMessagesDAO, clientDAO, validatedMessagesDAO);
 		validatorHandler.setInterval(interval);
-		validatorHandler.setPoolSize(poolSize);
+		validatorHandler.setPoolSize(lstFOS.size());
+		validatorHandler.setLstFOS(lstFOS);
 		return validatorHandler;
 	}
 
