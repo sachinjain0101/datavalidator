@@ -1,5 +1,6 @@
 package com.bullhorn.rest;
 
+import com.bullhorn.app.Constants;
 import com.bullhorn.app.OperaStatus;
 import com.google.gson.Gson;
 import io.swagger.annotations.Api;
@@ -46,7 +47,7 @@ public class DataValidator {
         for(Thread t:threadArray){
             lst.add(t.getName()+" : "+t.getState().toString());
         }
-        return lst.stream().filter((s)->s.startsWith("DATA-VALIDATOR")).collect(Collectors.toList());
+        return lst.stream().filter((s)->s.startsWith(Constants.DATA_VALIDATOR)).collect(Collectors.toList());
     }
 
 }

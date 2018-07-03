@@ -1,5 +1,6 @@
 package com.bullhorn.services;
 
+import com.bullhorn.app.Constants;
 import com.bullhorn.orm.refreshWork.dao.ServiceBusMessagesDAO;
 import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
 import com.bullhorn.orm.timecurrent.dao.ClientDAO;
@@ -56,6 +57,7 @@ public class ValidatorHandler {
             Validator validator = new Validator(serviceBusMessagesDAO,clientDAO, validatedMessagesDAO);
             validator.setFOS(FOS);
             validator.setInterval(interval);
+            taskScheduler.setThreadNamePrefix(String.format(Constants.DATA_VALIDATOR_THREAD_POOL_PREFIX,FOS.getName()));
             Future<?> future = taskScheduler.submit(validator);
             cancellableFutures.put(validator, future);
         }

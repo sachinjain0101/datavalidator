@@ -1,5 +1,6 @@
 package com.bullhorn;
 
+import com.bullhorn.app.Constants;
 import com.bullhorn.orm.refreshWork.dao.ServiceBusMessagesDAO;
 import com.bullhorn.orm.refreshWork.dao.ValidatedMessagesDAO;
 import com.bullhorn.orm.timecurrent.dao.ClientDAO;
@@ -79,10 +80,11 @@ public class DataValidatorApplication {
 		ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
 		threadPoolTaskScheduler.setPoolSize(lstFOS.size());
 		threadPoolTaskScheduler.setWaitForTasksToCompleteOnShutdown(true);
-		TblIntegrationConfig val2 = getConfig().stream().filter((k) -> k.getCfgKey().equals("THREADPOOL_SCHEDULER_TERMINATION_TIME_INSECONDS")).collect(Collectors.toList()).get(0);
+		TblIntegrationConfig val2 = getConfig().stream()
+				.filter((k) -> k.getCfgKey().equals(Constants.DATA_VALIDATOR_THREADPOOL_SCHEDULER_TERMINATION_TIME_INSECONDS))
+				.collect(Collectors.toList()).get(0);
 		int terminationTime = Integer.parseInt(val2.getCfgValue());
 		threadPoolTaskScheduler.setAwaitTerminationSeconds(terminationTime);
-		threadPoolTaskScheduler.setThreadNamePrefix("DATA-VALIDATOR-");
 		return threadPoolTaskScheduler;
 	}
 
@@ -90,7 +92,7 @@ public class DataValidatorApplication {
 	@DependsOn("validatorTaskScheduler")
 	public ValidatorHandler validatorHandler(){
 		LOGGER.debug("DataSwapperAsyncService Constructed");
-		TblIntegrationConfig val1 = getConfig().stream().filter((k) -> k.getCfgKey().equals("DATA_VALIDATOR_EXECUTE_INTERVAL")).collect(Collectors.toList()).get(0);
+		TblIntegrationConfig val1 = getConfig().stream().filter((k) -> k.getCfgKey().equals(Constants.DATA_VALIDATOR_EXECUTE_INTERVAL)).collect(Collectors.toList()).get(0);
 		long interval = Long.parseLong(val1.getCfgValue());
 		ValidatorHandler validatorHandler = new ValidatorHandler(serviceBusMessagesDAO, clientDAO, validatedMessagesDAO);
 		validatorHandler.setInterval(interval);
